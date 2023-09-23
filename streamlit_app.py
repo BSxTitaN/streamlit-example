@@ -24,7 +24,7 @@ dec_31 = datetime.date(next_year, 12, 31)
 uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 date_range_option = st.selectbox(
     "Select Date Range",
-    ["1 hour", "1 day", "1 week", "1 month", "1 year", "Custom"]
+    ["1 hour", "1 day", "1 week", "1 month", "Custom"]
 )
 
 if date_range_option == "Custom":
@@ -37,6 +37,11 @@ if date_range_option == "Custom":
         format="MM.DD.YYYY",
     )
     d
+
+tweet_station = st.selectbox(
+    "Select Twitter Handle",
+    ["Toyota Motorcorp", "Yo Sushi Restaurant", "Nobu Restaurant", "7-11 Store"]
+)
 
 st.title("Analysis Zone")
 
@@ -147,8 +152,23 @@ if uploaded_file is not None:
                ['387863', '浪川大輔さんから頂いた！！', 'Netural']]
 
         # Convert the list of lists to a DataFrame
-        df_tweets = pd.DataFrame(tweets_data, columns=["ID", "Tweets", "Sentiment Mode"])
-        st.dataframe(df_tweets)
+        selected_tab = st.tabs(["Happy", "Sad", "Neutral"])
+        if selected_tab == "Happy":
+            filtered_tweets = df[df['Senti'] == "Positive"]
+        elif selected_tab == "Sad":
+            filtered_tweets = df[df['Senti'] == "Negative"]
+        else:
+            filtered_tweets = df[df['Senti'] == "Neutral"]
+
+        # Remove the "Unnamed: 0" and "Unnamed: 0.1" columns
+        if "Unnamed: 0" in filtered_tweets.columns:
+            filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
+
+        # Convert the list of lists to a DataFrame
+        st.dataframe(filtered_tweets, height=150)
 
 else:
     st.text("Upload the file to display result!")
+
+# # Footer
+# st.footer("Made by Harsh in Streamlit")

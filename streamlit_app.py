@@ -152,20 +152,27 @@ if uploaded_file is not None:
                ['387863', '浪川大輔さんから頂いた！！', 'Netural']]
 
         # Convert the list of lists to a DataFrame
-        selected_tab = st.tabs(["Happy", "Sad", "Neutral"])
-        if selected_tab == "Happy":
+        tab1, tab2, tab3 = st.tabs(["Happy", "Sad", "Neutral"])
+        with tab1:
             filtered_tweets = df[df['Senti'] == "Positive"]
-        elif selected_tab == "Sad":
+            if "Unnamed: 0" in filtered_tweets.columns:
+                filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
+            # Convert the list of lists to a DataFrame
+            st.dataframe(filtered_tweets, height=550)
+        with tab2:
             filtered_tweets = df[df['Senti'] == "Negative"]
-        else:
+            if "Unnamed: 0" in filtered_tweets.columns:
+                filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
+                # Convert the list of lists to a DataFrame
+            st.dataframe(filtered_tweets, height=550)
+        with tab3:
             filtered_tweets = df[df['Senti'] == "Neutral"]
+            if "Unnamed: 0" in filtered_tweets.columns:
+                filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
+            # Convert the list of lists to a DataFrame
+            st.dataframe(filtered_tweets, height=550)
 
         # Remove the "Unnamed: 0" and "Unnamed: 0.1" columns
-        if "Unnamed: 0" in filtered_tweets.columns:
-            filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
-
-        # Convert the list of lists to a DataFrame
-        st.dataframe(filtered_tweets, height=150)
 
 else:
     st.text("Upload the file to display result!")

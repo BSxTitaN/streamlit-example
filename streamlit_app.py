@@ -9,11 +9,32 @@ import plotly.express as px
 import plotly.graph_objects as go
 import datetime
 
+# Define CSS styles for tab colors
+tab_styles = """
+<style>
+    div[data-baseweb="tab"] {
+        background-color: lightgray;
+    }
+    div[data-baseweb="tab"][aria-selected="true"] {
+        background-color: green;  /* Green for Happy */
+    }
+</style>
 """
-# Welcome to JPN-SEN-Analysis
 
-Upload the required `JPN-Data.csv` file to get started 
+# Apply CSS styles
+st.markdown(tab_styles, unsafe_allow_html=True)
+
 """
+# SEMANTIC ANALYSIS FOR SNS JAPAN
+Please select the twitter handle for analysis 
+"""
+
+# Upload the required `JPN-Data.csv` file to get started 
+
+tweet_station = st.selectbox(
+    "Select Twitter Handle",
+    ["Toyota Motorcorp", "Yo Sushi Restaurant", "Nobu Restaurant", "7-11 Store"]
+)
 
 model = keras.models.load_model('my_model.keras')
 today = datetime.datetime.now()
@@ -38,11 +59,6 @@ if date_range_option == "Custom":
     )
     d
 
-tweet_station = st.selectbox(
-    "Select Twitter Handle",
-    ["Toyota Motorcorp", "Yo Sushi Restaurant", "Nobu Restaurant", "7-11 Store"]
-)
-
 st.title("Analysis Zone")
 
 if uploaded_file is not None:
@@ -55,7 +71,7 @@ if uploaded_file is not None:
     else:
         # Perform sentiment analysis
         x = df['Japanese']
-
+       
         # Preprocess the text (similar to what you did during training)
         max_len = 1000
         tok = Tokenizer(num_words=1500)
@@ -68,6 +84,22 @@ if uploaded_file is not None:
         predictions = model.predict(sequences_matrix)
         sentiment_labels = np.argmax(predictions, axis=1).tolist()
 
+        # Create a new DataFrame with sentiment labels and Japanese texts
+        sentiment_df = pd.DataFrame({
+            'Senti': sentiment_labels,
+            'Japanese': df['Japanese']
+        })
+
+        # Create a function to find the English translation
+        def find_english_translation(japanese_text):
+            for index, row in df.iterrows():
+                if row['Japanese'] == japanese_text:
+                    return row['eng']
+            return ''
+
+        # Apply the function to get English translations
+        sentiment_df['English'] = sentiment_df['Japanese'].apply(find_english_translation)
+
         # Calculate sentiment statistics
         total_samples = len(sentiment_labels)
         negative_count = sentiment_labels.count(0)
@@ -75,15 +107,15 @@ if uploaded_file is not None:
         neutral_count = sentiment_labels.count(2)
 
         # Calculate percentages
-        negative_percentage = (negative_count / total_samples) * 100
-        positive_percentage = (positive_count / total_samples) * 100
-        neutral_percentage = (neutral_count / total_samples) * 100
+        negative_percentage = round((negative_count / total_samples) * 100, 2)
+        positive_percentage = round((positive_count / total_samples) * 100, 2)
+        neutral_percentage = round((neutral_count / total_samples) * 100, 2)
 
         # Display sentiment statistics as cards
         st.subheader("Sentiment Analysis Results")
 
         col1, col2, col3 = st.columns(3)
-
+        
         with col1:
             st.metric("Negative", negative_count)
             st.metric("Negative %", negative_percentage)
@@ -143,39 +175,35 @@ if uploaded_file is not None:
         with col2:
             st.plotly_chart(fig_bar, use_container_width=True)  # Display Pie Chart 2
 
-        # Display top 5 tweets with random data (replace with actual data)
-        st.subheader("Top 5 Tweets")
-        tweets_data = [['56431', '雅子様のセンスですかね', 'Positive'],
-               ['879398', '私ら庶民の母親にはできないスカート丈(お嬢様かお姫様丈)', 'Netural'],
-               ['8831573', 'やっぱり皇太子(天皇)より皇太子妃(皇后)のほうがデカいって見栄え最悪だな　ノミの夫婦', 'Negative'],
-               ['76347', '食べ物はそれほど悪くありませんでした', 'Positive'],
-               ['387863', '浪川大輔さんから頂いた！！', 'Netural']]
-
-        # Convert the list of lists to a DataFrame
+        # Display top 5 tweets with sentiment and English text
+        st.subheader("Detailed Reports on Tweets")
         tab1, tab2, tab3 = st.tabs(["Happy", "Sad", "Neutral"])
+
         with tab1:
-            filtered_tweets = df[df['Senti'] == "Positive"]
+            filtered_tweets = sentiment_df[sentiment_df['Senti'] == 1]
             if "Unnamed: 0" in filtered_tweets.columns:
                 filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
-            # Convert the list of lists to a DataFrame
+            # Rename the first column to "Tweet_Id"
+            filtered_tweets.index.names = ['Twt-ID']
             st.dataframe(filtered_tweets, height=550)
+
         with tab2:
-            filtered_tweets = df[df['Senti'] == "Negative"]
+            filtered_tweets = sentiment_df[sentiment_df['Senti'] == 0]
             if "Unnamed: 0" in filtered_tweets.columns:
                 filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
-                # Convert the list of lists to a DataFrame
+            # Rename the first column to "Tweet_Id"
+            filtered_tweets.index.names = ['Twt-ID']
             st.dataframe(filtered_tweets, height=550)
+
         with tab3:
-            filtered_tweets = df[df['Senti'] == "Neutral"]
+            filtered_tweets = sentiment_df[sentiment_df['Senti'] == 2]
             if "Unnamed: 0" in filtered_tweets.columns:
                 filtered_tweets = filtered_tweets.drop(columns=["Unnamed: 0", "Unnamed: 0.1"])
-            # Convert the list of lists to a DataFrame
+            # Rename the first column to "Tweet_Id"
+            filtered_tweets.index.names = ['Twt-ID']
             st.dataframe(filtered_tweets, height=550)
 
         # Remove the "Unnamed: 0" and "Unnamed: 0.1" columns
 
 else:
-    st.text("Upload the file to display result!")
-
-# # Footer
-# st.footer("Made by Harsh in Streamlit")
+    st.text("Upload the file to display the results!")
